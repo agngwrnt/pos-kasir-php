@@ -3,10 +3,10 @@ services:
     image: php:8.0-apache
     container_name: php_web
     platform: linux/amd64
-    ports:
-      - "10.100.0.129:8080:80"
     volumes:
       - ./:/var/www/html
+    ports:
+      - "8080:80"
     depends_on:
       - db
     environment:
