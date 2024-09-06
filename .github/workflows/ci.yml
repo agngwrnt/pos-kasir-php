@@ -1,0 +1,55 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+    - master
+    # pull_request:
+    #   branches:
+    #   - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: toko_db
+        ports:
+        - 3306:3306
+        options: >
+          --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=3 #magic___^_^___line
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Set up Docker Compose
+      run: sudo apt-get install docker-compose
+
+    - name: Build and run Docker Compose
+      run: |
+        docker-compose build
+        docker-compose up -d
+
+    - name: Run Tests (Optional)
+      run: |
+        # Contoh menjalankan script tes atau perintah validasi
+        docker-compose exec web php artisan test
+
+    - name: Stop services
+      if: always()
+      run: docker-compose down
