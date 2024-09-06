@@ -52,7 +52,7 @@ jobs:
     - name: Run Tests (Optional)
       run: |
         # Contoh menjalankan script tes atau perintah validasi
-        docker-compose exec web php artisan test
+        docker-compose exec -T web php artisan test
 
     - name: Stop services
       if: always()
