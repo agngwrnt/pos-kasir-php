@@ -12,19 +12,19 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    services:
-      db:
-        image: mysql:5.7
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: toko_db
-        ports:
-        - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent",
-          --health-interval=120s
-          --health-timeout=150s
-          --health-retries=50
+    # services:
+    #   db:
+    #     image: mysql:5.7
+    #     env:
+    #       MYSQL_ROOT_PASSWORD: password
+    #       MYSQL_DATABASE: toko_db
+    #     ports:
+    #     - 3306:3306
+    #     options: >-
+    #       --health-cmd="mysqladmin ping --silent",
+    #       --health-interval=120s
+    #       --health-timeout=150s
+    #       --health-retries=50
           
     steps:
     - name: Checkout code
