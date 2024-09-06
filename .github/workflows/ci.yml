@@ -22,9 +22,9 @@ jobs:
         - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping --silent",
-          --health-interval=20s
-          --health-timeout=15s
-          --health-retries=5
+          --health-interval=120s
+          --health-timeout=150s
+          --health-retries=50
           
     steps:
     - name: Checkout code
