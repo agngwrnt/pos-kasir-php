@@ -1,221 +1,253 @@
- <!--sidebar end-->
-      
-      <!-- **********************************************************************************************************************************************************
-      MAIN CONTENT
-      *********************************************************************************************************************************************************** -->
-      <!--main content start-->
-<?php 
-	$id = $_SESSION['admin']['id_member'];
-	$hasil = $lihat -> member_edit($id);
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+require 'config.php'; // Pastikan ini benar dan koneksi database sudah tersambung
+
+// Menjalankan query dan mendapatkan hasilnya
+$stmt = $config->query("SELECT * FROM barang");
+$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+if (!$results) {
+    die('Query Error');
+}
 ?>
-	<h4>Keranjang Penjualan</h4>
-	<br>
-	<?php if(isset($_GET['success'])){?>
-	<div class="alert alert-success">
-		<p>Edit Data Berhasil !</p>
-	</div>
-	<?php }?>
-	<?php if(isset($_GET['remove'])){?>
-	<div class="alert alert-danger">
-		<p>Hapus Data Berhasil !</p>
-	</div>
-	<?php }?>
-	<div class="row">
-		<div class="col-sm-4">
-			<div class="card card-primary mb-3">
-				<div class="card-header bg-primary text-white">
-					<h5><i class="fa fa-search"></i> Cari Barang</h5>
-				</div>
-				<div class="card-body">
-					<input type="text" id="cari" class="form-control" name="cari" placeholder="Masukan : Kode / Nama Barang  [ENTER]">
-				</div>
-			</div>
-		</div>
-		<div class="col-sm-8">
-			<div class="card card-primary mb-3">
-				<div class="card-header bg-primary text-white">
-					<h5><i class="fa fa-list"></i> Hasil Pencarian</h5>
-				</div>
-				<div class="card-body">
-					<div class="table-responsive">
-						<div id="hasil_cari"></div>
-						<div id="tunggu"></div>
-					</div>
-				</div>
-			</div>
-		</div>
-		
 
-		<div class="col-sm-12">
-			<div class="card card-primary">
-				<div class="card-header bg-primary text-white">
-					<h5><i class="fa fa-shopping-cart"></i> KASIR
-					<a class="btn btn-danger float-right" 
-						onclick="javascript:return confirm('Apakah anda ingin reset keranjang ?');" href="fungsi/hapus/hapus.php?penjualan=jual">
-						<b>RESET KERANJANG</b></a>
-					</h5>
-				</div>
-				<div class="card-body">
-					<div id="keranjang" class="table-responsive">
-						<table class="table table-bordered">
-							<tr>
-								<td><b>Tanggal</b></td>
-								<td><input type="text" readonly="readonly" class="form-control" value="<?php echo date("j F Y, G:i");?>" name="tgl"></td>
-							</tr>
-						</table>
-						<table class="table table-bordered w-100" id="example1">
-							<thead>
-								<tr>
-									<td> No</td>
-									<td> Nama Barang</td>
-									<td style="width:10%;"> Jumlah</td>
-									<td style="width:20%;"> Total</td>
-									<td> Kasir</td>
-									<td> Aksi</td>
-								</tr>
-							</thead>
-							<tbody>
-								<?php $total_bayar=0; $no=1; $hasil_penjualan = $lihat -> penjualan();?>
-								<?php foreach($hasil_penjualan  as $isi){?>
-								<tr>
-									<td><?php echo $no;?></td>
-									<td><?php echo $isi['nama_barang'];?></td>
-									<td>
-										<!-- aksi ke table penjualan -->
-										<form method="POST" action="fungsi/edit/edit.php?jual=jual">
-												<input type="number" name="jumlah" value="<?php echo $isi['jumlah'];?>" class="form-control">
-												<input type="hidden" name="id" value="<?php echo $isi['id_penjualan'];?>" class="form-control">
-												<input type="hidden" name="id_barang" value="<?php echo $isi['id_barang'];?>" class="form-control">
-											</td>
-											<td>Rp.<?php echo number_format($isi['total']);?>,-</td>
-											<td><?php echo $isi['nm_member'];?></td>
-											<td>
-												<button type="submit" class="btn btn-warning">Update</button>
-										</form>
-										<!-- aksi ke table penjualan -->
-										<a href="fungsi/hapus/hapus.php?jual=jual&id=<?php echo $isi['id_penjualan'];?>&brg=<?php echo $isi['id_barang'];?>
-											&jml=<?php echo $isi['jumlah']; ?>"  class="btn btn-danger"><i class="fa fa-times"></i>
-										</a>
-									</td>
-								</tr>
-								<?php $no++; $total_bayar += $isi['total'];}?>
-							</tbody>
-					</table>
-					<br/>
-					<?php $hasil = $lihat -> jumlah(); ?>
-					<div id="kasirnya">
-						<table class="table table-stripped">
-							<?php
-							// proses bayar dan ke nota
-							if(!empty($_GET['nota'] == 'yes')) {
-								$total = $_POST['total'];
-								$bayar = $_POST['bayar'];
-								if(!empty($bayar))
-								{
-									$hitung = $bayar - $total;
-									if($bayar >= $total)
-									{
-										$id_barang = $_POST['id_barang'];
-										$id_member = $_POST['id_member'];
-										$jumlah = $_POST['jumlah'];
-										$total = $_POST['total1'];
-										$tgl_input = $_POST['tgl_input'];
-										$periode = $_POST['periode'];
-										$jumlah_dipilih = count($id_barang);
-										
-										for($x=0;$x<$jumlah_dipilih;$x++){
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Page</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
 
-											$d = array($id_barang[$x],$id_member[$x],$jumlah[$x],$total[$x],$tgl_input[$x],$periode[$x]);
-											$sql = "INSERT INTO nota (id_barang,id_member,jumlah,total,tanggal_input,periode) VALUES(?,?,?,?,?,?)";
-											$row = $config->prepare($sql);
-											$row->execute($d);
+        .content {
+            flex: 1;
+            padding: 20px;
+        }
 
-											// ubah stok barang
-											$sql_barang = "SELECT * FROM barang WHERE id_barang = ?";
-											$row_barang = $config->prepare($sql_barang);
-											$row_barang->execute(array($id_barang[$x]));
-											$hsl = $row_barang->fetch();
-											
-											$stok = $hsl['stok'];
-											$idb  = $hsl['id_barang'];
+        .image-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 5px;
+            background-color: #fff;
+            position: relative;
+        }
 
-											$total_stok = $stok - $jumlah[$x];
-											// echo $total_stok;
-											$sql_stok = "UPDATE barang SET stok = ? WHERE id_barang = ?";
-											$row_stok = $config->prepare($sql_stok);
-											$row_stok->execute(array($total_stok, $idb));
-										}
-										echo '<script>alert("Belanjaan Berhasil Di Bayar !");</script>';
-									}else{
-										echo '<script>alert("Uang Kurang ! Rp.'.$hitung.'");</script>';
-									}
-								}
-							}
-							?>
-							<!-- aksi ke table nota -->
-							<form method="POST" action="index.php?page=jual&nota=yes#kasirnya">
-								<?php foreach($hasil_penjualan as $isi){;?>
-									<input type="hidden" name="id_barang[]" value="<?php echo $isi['id_barang'];?>">
-									<input type="hidden" name="id_member[]" value="<?php echo $isi['id_member'];?>">
-									<input type="hidden" name="jumlah[]" value="<?php echo $isi['jumlah'];?>">
-									<input type="hidden" name="total1[]" value="<?php echo $isi['total'];?>">
-									<input type="hidden" name="tgl_input[]" value="<?php echo $isi['tanggal_input'];?>">
-									<input type="hidden" name="periode[]" value="<?php echo date('m-Y');?>">
-								<?php $no++; }?>
-								<tr>
-									<td>Total Semua  </td>
-									<td><input type="text" class="form-control" name="total" value="<?php echo $total_bayar;?>"></td>
-								
-									<td>Bayar  </td>
-									<td><input type="text" class="form-control" name="bayar" value="<?php echo $bayar;?>"></td>
-									<td><button class="btn btn-success"><i class="fa fa-shopping-cart"></i> Bayar</button>
-									<?php  if(!empty($_GET['nota'] == 'yes')) {?>
-										<a class="btn btn-danger" href="fungsi/hapus/hapus.php?penjualan=jual">
-										<b>RESET</b></a></td><?php }?></td>
-								</tr>
-							</form>
-							<!-- aksi ke table nota -->
-							<tr>
-								<td>Kembali</td>
-								<td><input type="text" class="form-control" value="<?php echo $hitung;?>"></td>
-								<td></td>
-								<td>
-									<a href="print.php?nm_member=<?php echo $_SESSION['admin']['nm_member'];?>
-									&bayar=<?php echo $bayar;?>&kembali=<?php echo $hitung;?>" target="_blank">
-									<button class="btn btn-secondary">
-										<i class="fa fa-print"></i> Print Untuk Bukti Pembayaran
-									</button></a>
-								</td>
-							</tr>
-						</table>
-						<br/>
-						<br/>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-	
+        .image-item img {
+            width: 100px;
+            height: 100px;
+            margin-right: 10px;
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+        }
+
+        .quantity-controls button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .cart-popup {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+        }
+
+        .cart-popup h3 {
+            margin: 0 0 10px;
+        }
+
+        .cart-popup ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .cart-popup ul li {
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .cart-icon {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: #28a745;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .cart-icon img {
+            width: 24px;
+            height: 24px;
+        }
+
+        .proceed-button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+    </style>
+/head>
+<body>
+
+<div class="content">
+    <h2>Daftar Barang:</h2>
+    <div id="product-list">
+        <?php foreach ($results as $row): ?>
+            <div class="image-item">
+                <!-- Anda dapat menyesuaikan URL gambar berdasarkan informasi gambar yang Anda miliki -->
+                <img src="path/to/default-image.jpg" alt="<?php echo $row['nama_barang']; ?>" style="width: 100px; height: 100px;">
+                <p><?php echo $row['nama_barang']; ?> (<?php echo $row['merk']; ?>)</p>
+                <p>Harga: Rp <?php echo number_format($row['harga_jual'], 0, ',', '.'); ?></p>
+                <div class="quantity-controls">
+                    <button onclick="updateQuantity(<?php echo $row['id']; ?>, -1)">-</button>
+                    <span id="quantity-<?php echo $row['id']; ?>">0</span>
+                    <button onclick="updateQuantity(<?php echo $row['id']; ?>, 1)">+</button>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- Pop-Up Cart -->
+<div id="cart-popup" class="cart-popup">
+    <h3>Keranjang</h3>
+    <ul id="cart-items">
+        <!-- Item dalam keranjang akan muncul di sini -->
+    </ul>
+    <button id="proceed-button" class="proceed-button" onclick="proceedToCheckout()">Proses</button>
+</div>
+
+<!-- Icon Keranjang -->
+<div id="cart-icon" class="cart-icon" onclick="toggleCart()">
+    <img src="assets/img/cart.webp" alt="Cart">
+</div>
 
 <script>
-// AJAX call for autocomplete 
-$(document).ready(function(){
-	$("#cari").change(function(){
-		$.ajax({
-			type: "POST",
-			url: "fungsi/edit/edit.php?cari_barang=yes",
-			data:'keyword='+$(this).val(),
-			beforeSend: function(){
-				$("#hasil_cari").hide();
-				$("#tunggu").html('<p style="color:green"><blink>tunggu sebentar</blink></p>');
-			},
-			success: function(html){
-				$("#tunggu").html('');
-				$("#hasil_cari").show();
-				$("#hasil_cari").html(html);
-			}
-		});
-	});
-});
-//To select country name
-</script>
+    // Data gambar dan harga
+    const products = [
+        { id: 1, title: 'Image 1', category: 'Nature', url: 'path/to/image1.jpg', price: 50000 },
+        { id: 2, title: 'Image 2', category: 'Urban', url: 'path/to/image2.jpg', price: 75000 },
+        { id: 3, title: 'Image 3', category: 'Nature', url: 'path/to/image3.jpg', price: 60000 },
+        { id: 4, title: 'Image 4', category: 'Abstract', url: 'path/to/image4.jpg', price: 80000 },
+    ];
+
+    let cartItems = {};
+    let totalPrice = 0;
+
+    // Tampilkan daftar produk
+    function displayProducts() {
+        const productList = document.getElementById('product-list');
+        products.forEach(product => {
+            const productItem = document.createElement('div');
+            productItem.className = 'image-item';
+            productItem.innerHTML = `
+                <img src="${product.url}" alt="${product.title}">
+                <p>${product.title}</p>
+                <div class="quantity-controls">
+                    <button onclick="updateQuantity(${product.id}, -1)">-</button>
+                    <span id="quantity-${product.id}">0</span>
+                    <button onclick="updateQuantity(${product.id}, 1)">+</button>
+                </div>
+            `;
+            productList.appendChild(productItem);
+        });
+    }
+
+    // Update quantity dan total
+    function updateQuantity(id, change) {
+        const quantitySpan = document.getElementById(`quantity-${id}`);
+        let currentQuantity = parseInt(quantitySpan.textContent);
+        currentQuantity += change;
+
+        if (currentQuantity < 0) currentQuantity = 0;
+        quantitySpan.textContent = currentQuantity;
+
+        const product = products.find(item => item.id === id);
+
+        if (currentQuantity > 0) {
+            cartItems[id] = { ...product, quantity: currentQuantity };
+        } else {
+            delete cartItems[id];
+        }
+
+        updateCart();
+    }
+
+    // Tampilkan dan sembunyikan pop-up keranjang
+    function toggleCart() {
+        const cartPopup = document.getElementById('cart-popup');
+        cartPopup.style.display = cartPopup.style.display === 'none' || cartPopup.style.display === '' ? 'block' : 'none';
+    }
+
+    // Update isi keranjang
+    function updateCart() {
+        const cartList = document.getElementById('cart-items');
+        cartList.innerHTML = '';
+
+        Object.values(cartItems).forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `${item.title} x ${item.quantity}`;
+            cartList.appendChild(li);
+        });
+    }
+
+    // Mengarahkan ke halaman konfirmasi
+    function proceedToCheckout() {
+        if (Object.keys(cartItems).length === 0) {
+            alert('Keranjang kosong, silakan tambahkan item.');
+            return;
+        }
+        // Menyimpan data ke sessionStorage untuk halaman konfirmasi
+        sessionStorage.setItem('cartItems', JSON.stringify(cartItems));
+        window.location.href = '/admin/module/jual/confirmation.php';
+    }
+
+    // Inisialisasi daftar produk
+    displayProducts();
+/script>
+
+</body>
+</html>
