@@ -1,7 +1,17 @@
 <?php
 session_start();
-$cartItems = isset($_SESSION['cartItems']) ? $_SESSION['cartItems'] : [];
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// $cartItems = isset($_SESSION['cartItems']) ? $_SESSION['cartItems'] : [];
 $totalPrice = 0;
+// $cartItems = $_SESSION['cartItems'];
+
+if (isset($_SESSION['cartItems']) && is_array($_SESSION['cartItems'])) {
+    $cartItems = $_SESSION['cartItems'];
+} else {
+    $cartItems = [];
+}
 
 // Hitung total harga
 foreach ($cartItems as $item) {
@@ -68,7 +78,14 @@ foreach ($cartItems as $item) {
     <div class="confirmation-container">
         <h1>Konfirmasi Pesanan</h1>
         <ul id="cart-items-list">
-            <!-- Daftar item keranjang akan ditambahkan di sini oleh JavaScript -->
+            <!-- PHP Loop to Display Cart Items -->
+            <?php if (!empty($cartItems)) : ?>
+                <?php foreach ($cartItems as $item) : ?>
+                    <li><?php echo htmlspecialchars($item['title']); ?> x <?php echo $item['quantity']; ?> - <?php echo number_format($item['price'], 2); ?> IDR</li>
+                <?php endforeach; ?>
+            <?php else : ?>
+                <li>Keranjang kosong.</li>
+            <?php endif; ?>
         </ul>
         <div class="total-price">
             Total Harga: <span id="total-price"><?php echo number_format($totalPrice, 2); ?> IDR</span>
@@ -79,26 +96,31 @@ foreach ($cartItems as $item) {
                 <label><input type="radio" name="payment" value="bank-transfer"> Transfer Bank</label>
                 <label><input type="radio" name="payment" value="cash-on-delivery"> Bayar di Tempat</label>
                 <input type="hidden" name="totalPrice" value="<?php echo number_format($totalPrice, 2); ?>">
-                <input type="hidden" name="cartItems" id="hidden-cart-items">
+                <input type="hidden" name="cartItems" value='<?php echo json_encode($cartItems); ?>'>
                 <button type="submit" class="pay-button">Bayar Sekarang</button>
             </form>
         </div>
     </div>
 
     <script>
-        // Ambil data keranjang dari sessionStorage
-        const cartItems = JSON.parse(sessionStorage.getItem('cartItems')) || [];
-        
-        // Tampilkan item keranjang
-        const cartItemsList = document.getElementById('cart-items-list');
-        cartItems.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = `${item.title} x ${item.quantity} - ${item.price} IDR`;
-            cartItemsList.appendChild(li);
-        });
+        // (Optional) Recheck Cart Data from sessionStorage
+        const cartItemsFromSession = JSON.parse(sessionStorage.getItem('cartItems')) || [];
 
-        // Set data keranjang ke input hidden
-        document.getElementById('hidden-cart-items').value = JSON.stringify(cartItems);
+        // If sessionStorage exists, update the list in JS (for dynamic front-end display)
+        if (cartItemsFromSession.length > 0) {
+            const cartItemsList = document.getElementById('cart-items-list');
+            cartItemsList.innerHTML = '';  // Clear existing items
+
+            cartItemsFromSession.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.title} x ${item.quantity} - ${item.price} IDR`;
+                cartItemsList.appendChild(li);
+            });
+
+            // Optionally update the total price
+            const totalPrice = cartItemsFromSession.reduce((total, item) => total + item.price * item.quantity, 0);
+            document.getElementById('total-price').textContent = totalPrice.toLocaleString('id-ID', { minimumFractionDigits: 2 }) + ' IDR';
+        }
     </script>
 </body>
 </html>

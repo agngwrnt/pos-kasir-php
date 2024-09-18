@@ -16,9 +16,9 @@
  */
 
 date_default_timezone_set("Asia/Jakarta");
-// error_reporting(0);
+error_reporting(0);
 
-error_reporting(E_ALL);
+// error_reporting(E_ALL);
 ini_set('display_errors', 1);
 	// sesuaikan dengan server anda
 	$host 	= 'db'; // host server

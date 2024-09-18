@@ -2,8 +2,14 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+if (isset($_POST['cartItems'])) {
+    $_SESSION['cartItems'] = json_decode($_POST['cartItems'], true);
+    header('Location: /admin/module/jual/confirmation.php');
+    exit();
+}
+$_SESSION['cartItems'] = $cartItems;
+// error_reporting(E_ALL);
+// ini_set('display_errors', 1);
 require 'config.php'; // Pastikan ini benar dan koneksi database sudah tersambung
 
 // Menjalankan query dan mendapatkan hasilnya
@@ -13,6 +19,10 @@ $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 if (!$results) {
     die('Query Error');
 }
+
+// echo '<pre>';
+// print_r($results);
+// echo '</pre>';
 ?>
 
 <!DOCTYPE html>
@@ -38,15 +48,17 @@ if (!$results) {
         }
 
         .image-item {
+            flex: 1 1 calc(25% - 20px); /* Setiap item mengambil 25% dari lebar kontainer */
             border: 1px solid #ccc;
             padding: 10px;
-            margin: 10px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: space-between;
             border-radius: 5px;
             background-color: #fff;
             position: relative;
+            text-align: center;
         }
 
         .image-item img {
@@ -127,6 +139,12 @@ if (!$results) {
             cursor: pointer;
             font-size: 14px;
             width: 100%;
+        }
+
+        #product-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px; /* Jarak antar kotak */
         }
     </style>
 /head>
@@ -212,7 +230,7 @@ if (!$results) {
         } else {
             delete cartItems[id];
         }
-
+        console.log(cartItems);
         updateCart();
     }
 
@@ -225,6 +243,19 @@ if (!$results) {
     // Update isi keranjang
     function updateCart() {
         const cartList = document.getElementById('cart-items');
+
+        if (!cartList) {
+        console.error('Element with id "cart-items" not found');
+        return;
+    }
+
+    if (Object.keys(cartItems).length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'Keranjang kosong';
+        cartList.appendChild(li);
+        return;
+    }
+
         cartList.innerHTML = '';
 
         Object.values(cartItems).forEach(item => {
@@ -243,11 +274,13 @@ if (!$results) {
         // Menyimpan data ke sessionStorage untuk halaman konfirmasi
         sessionStorage.setItem('cartItems', JSON.stringify(cartItems));
         window.location.href = '/admin/module/jual/confirmation.php';
+        alert('Cart items:', sessionStorage.getItem('cartItems'));
+        // alert('Cart items before redirect:', JSON.stringify(cartItems));
     }
 
     // Inisialisasi daftar produk
     displayProducts();
-/script>
+</script>
 
 </body>
 </html>
