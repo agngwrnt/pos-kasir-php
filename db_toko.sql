@@ -142,7 +142,7 @@ CREATE TABLE `toko` (
 /*Data for the table `toko` */
 
 insert  into `toko`(`id_toko`,`nama_toko`,`alamat_toko`,`tlp`,`nama_pemilik`) values 
-(1,'CV Daruttaqwa','Ujung Harapan','081234567890','Fauzan Falah');
+(1,'PT TWENTY ONE','Batu Ceper','085155404035','Agung Wiranata');
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
