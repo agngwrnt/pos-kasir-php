@@ -61,6 +61,20 @@
             </div>
         </div>
     </li>
+    <li class="nav-item active">
+        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapse4" aria-expanded="true"
+            aria-controls="collapse4">
+            <i class="fas fa-fw fa-desktop"></i>
+            <span>Settlement</span>
+        </a>
+        <div id="collapse4" class="collapse" aria-labelledby="heading4" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+                <!-- <h6 class="collapse-header">Custom Components:</h6> -->
+                <a class="collapse-item" href="index.php?page=settlement">settlement</a>
+                <!-- <a class="collapse-item" href="index.php?page=laporan">Laporan Penjualan</a> -->
+            </div>
+        </div>
+    </li>
     <hr class="sidebar-divider">
     <li class="nav-item active">
         <a class="nav-link" href="index.php?page=pengaturan">

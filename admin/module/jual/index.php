@@ -1,7 +1,17 @@
 <?php
-// Start the session if not already started
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// if (session_status() === PHP_SESSION_NONE) {
+//     session_start();
+// }
+
+session_start();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $cartItems = json_decode(file_get_contents('php://input'), true);
+    if (!empty($cartItems)) {
+        $_SESSION['cartItems'] = $cartItems; // Simpan ke session
+        echo json_encode(['status' => 'success']);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Keranjang kosong']);
+    }
 }
 
 error_reporting(E_ALL);
@@ -29,31 +39,6 @@ $categories = [];
 foreach ($results as $row) {
     $categories[$row['id_kategori']][] = $row;
 }
-?>
-
-<?php 
-	// @ob_start();
-	// session_start();
-
-	// if(!empty($_SESSION['admin'])){
-	// 	require 'config.php';
-	// 	include $view;
-	// 	$lihat = new view($config);
-	// 	$toko = $lihat -> toko();
-	// 	//  admin
-	// 		include 'admin/template/header.php';
-	// 		include 'admin/template/sidebar.php';
-	// 			if(!empty($_GET['page'])){
-	// 				include 'admin/module/'.$_GET['page'].'/index.php';
-	// 			}else{
-	// 				include 'admin/template/home.php';
-	// 			}
-	// 		include 'admin/template/footer.php';
-	// 	// end admin
-	// }else{
-	// 	echo '<script>window.location="login.php";</script>';
-	// 	exit;
-	// }
 ?>
 
 <!DOCTYPE html>
@@ -191,10 +176,14 @@ foreach ($results as $row) {
     <img src="path/to/image.jpg" alt="<?php echo htmlspecialchars($item['nama_barang']); ?>">
     <p><?php echo htmlspecialchars($item['nama_barang']); ?> (<?php echo htmlspecialchars($item['merk']); ?>)</p>
     <p>Harga: Rp <?php echo number_format($item['harga_jual'], 0, ',', '.'); ?></p>
-    <div class="quantity-controls">
+    <!-- <div class="quantity-controls">
         <button onclick="updateQuantity('<?php echo $item['id']; ?>', -1)">-</button>
         <span id="quantity-<?php echo $item['id']; ?>">0</span>
         <button onclick="updateQuantity('<?php echo $item['id']; ?>', 1)">+</button>
+    </div> -->
+    <div class="quantity-controls">
+    <!-- Input number untuk kuantitas -->
+    <input type="number" id="quantity-<?php echo $item['id']; ?>" value="" min="0" oninput="updateQuantityFromInput('<?php echo $item['id']; ?>')">
     </div>
 </div>
 
@@ -265,42 +254,84 @@ foreach ($results as $row) {
     }
 
     // Update quantity dan total
-    function updateQuantity(id, change) {
-    const quantitySpan = document.getElementById(`quantity-${id}`);
-    let currentQuantity = parseInt(quantitySpan.textContent);
-    currentQuantity += change;
+//     function updateQuantity(id, change) {
+//     const quantitySpan = document.getElementById(`quantity-${id}`);
+//     let currentQuantity = parseInt(quantitySpan.textContent);
+//     currentQuantity += change;
 
-    if (currentQuantity < 0) currentQuantity = 0;
-    quantitySpan.textContent = currentQuantity;
+//     if (currentQuantity < 0) currentQuantity = 0;
+//     quantitySpan.textContent = currentQuantity;
 
-    // Ambil informasi produk berdasarkan ID dari kategori yang aktif
-    const productElement = document.querySelector(`#category-${currentCategory} .product-item[data-id="${id}"]`);
-    const productName = productElement.querySelector('p:first-of-type').textContent;
-    const productPrice = productElement.querySelector('p:last-of-type').textContent;
+//     // Ambil informasi produk berdasarkan ID dari kategori yang aktif
+//     const productElement = document.querySelector(`#category-${currentCategory} .product-item[data-id="${id}"]`);
+//     const productName = productElement.querySelector('p:first-of-type').textContent;
+//     const productPrice = productElement.querySelector('p:last-of-type').textContent;
 
-    const product = {
-        id: id,
-        nama_barang: productName,
-        harga_jual: productPrice,
-        quantity: currentQuantity
-    };
+//     const product = {
+//         // id: id,
+//         id: 'BR' + String(id).padStart(3, '0'),
+//         nama_barang: productName,
+//         harga_jual: productPrice,
+//         quantity: currentQuantity
+//     };
 
-    if (currentQuantity > 0) {
-        cartItems[id] = product;  // Simpan produk dengan informasi lengkap
-    } else {
-        delete cartItems[id];  // Hapus jika jumlah 0
+//     if (currentQuantity > 0) {
+//         cartItems[id] = product;  // Simpan produk dengan informasi lengkap
+//     } else {
+//         delete cartItems[id];  // Hapus jika jumlah 0
+//     }
+
+//     console.log(cartItems); //debug
+//     updateCart();
+
+//     // Check if there are any items in the cart, keep it open if true
+//     if (Object.keys(cartItems).length > 0) {
+//         openCart();
+//     } else {
+//         closeCart();
+//     }
+// }
+
+    // Fungsi untuk mengupdate jumlah berdasarkan input number secara langsung
+    function updateQuantityFromInput(id) {
+        const quantityInput = document.getElementById(`quantity-${id}`);
+        let currentQuantity = parseInt(quantityInput.value);
+
+        // Jika kuantitas kurang dari 0, set menjadi 0
+        if (currentQuantity < 0) {
+            currentQuantity = 0;
+        }
+
+        // Update nilai quantity
+        quantityInput.value = currentQuantity;
+
+        // Ambil informasi produk berdasarkan ID dari kategori yang aktif
+        const productElement = document.querySelector(`#category-${currentCategory} .product-item[data-id="${id}"]`);
+        const productName = productElement.querySelector('p:first-of-type').textContent;
+        const productPrice = productElement.querySelector('p:last-of-type').textContent;
+
+        const product = {
+            id: 'BR' + String(id).padStart(3, '0'),
+            nama_barang: productName,
+            harga_jual: productPrice,
+            quantity: currentQuantity
+        };
+
+        if (currentQuantity > 0) {
+            cartItems[id] = product;  // Simpan produk dengan informasi lengkap
+        } else {
+            delete cartItems[id];  // Hapus jika jumlah 0
+        }
+
+        updateCart();
+
+        // Check if there are any items in the cart, keep it open if true
+        if (Object.keys(cartItems).length > 0) {
+            openCart();
+        } else {
+            closeCart();
+        }
     }
-
-    console.log(cartItems);
-    updateCart();
-
-    // Check if there are any items in the cart, keep it open if true
-    if (Object.keys(cartItems).length > 0) {
-        openCart();
-    } else {
-        closeCart();
-    }
-}
 
 
     // Update isi keranjang
@@ -339,8 +370,8 @@ foreach ($results as $row) {
         }
         // Menyimpan data ke sessionStorage untuk halaman konfirmasi
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
-alert('Cart items before redirect:', localStorage.getItem('cartItems'));
-
+        console.log('Cart items before redirect:', localStorage.getItem('cartItems'));
+        
         window.location.href = '/admin/module/jual/confirmation.php';
         // alert('Cart items:', sessionStorage.getItem('cartItems'));
         // alert('Cart items before redirect:', JSON.stringify(cartItems));

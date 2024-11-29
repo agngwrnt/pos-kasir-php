@@ -147,3 +147,13 @@ insert  into `toko`(`id_toko`,`nama_toko`,`alamat_toko`,`tlp`,`nama_pemilik`) va
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+CREATE TABLE settlement_reports (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    report_date DATE NOT NULL,
+    total_income DECIMAL(15, 2) NOT NULL,
+    total_expense DECIMAL(15, 2) NOT NULL,
+    final_balance DECIMAL(15, 2) NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

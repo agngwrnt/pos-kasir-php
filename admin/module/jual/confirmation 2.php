@@ -1,5 +1,78 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 session_start();
+include '../../../config.php'; // File koneksi database
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    echo "<pre>";
+    print_r($_POST); // Debug data yang dikirimkan melalui form
+    echo "</pre>";
+    exit; // Hentikan sementara untuk melihat hasil
+    // Proses pembayaran
+    $cartItems = json_decode($_POST['cartItems'], true);
+    // if (json_last_error() !== JSON_ERROR_NONE) {
+    //     die("JSON Decode Error: " . json_last_error_msg());
+    // }
+    // echo "<pre>";
+    // print_r($cartItems);
+    // echo "</pre>";
+    // exit;
+    $totalPrice = $_POST['totalPrice'];
+    $paymentMethod = $_POST['payment'];
+    $id_member = $_SESSION['admin']['id_member']; // ID member dari session
+    $tanggal_input = date('Y-m-d H:i:s');
+    $periode = date('m-Y');
+
+    function extractHarga($harga) {
+        return (int) preg_replace('/[^0-9]/', '', $harga);
+    }
+
+    if ($cartItems && count($cartItems) > 0) {
+        $conn->beginTransaction(); // Mulai transaksi
+
+        try {
+            foreach ($cartItems as $item) {
+                $id_barang = $item['id_barang'];
+                $nama_barang = $item['nama_barang'];
+                $harga = extractHarga($item['harga_jual']);
+                $jumlah = $item['quantity'];
+                $total = $item['harga_jual'] * $jumlah;
+
+                echo "Barang: $nama_barang, Harga: $harga, Jumlah: $jumlah, Total: $total<br>";
+
+                // Masukkan data ke tabel nota
+                $stmtNota = $conn->prepare("
+                    INSERT INTO nota (id_barang, id_member, jumlah, total, tanggal_input, periode) 
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                $stmtNota->execute([$id_barang, $id_member, $jumlah, $total, $tanggal_input, $periode]);
+
+                // Kurangi stok pada tabel barang
+                $stmtBarang = $conn->prepare("SELECT stok FROM barang WHERE id_barang = ?");
+                $stmtBarang->execute([$id_barang]);
+                $stokBarang = $stmtBarang->fetchColumn();
+
+                if ($stokBarang < $jumlah) {
+                    throw new Exception("Stok untuk barang $nama_barang tidak cukup!");
+                }
+
+                $newStok = $stokBarang - $jumlah;
+                $stmtUpdateBarang = $conn->prepare("UPDATE barang SET stok = ? WHERE id_barang = ?");
+                $stmtUpdateBarang->execute([$newStok, $id_barang]);
+            }
+
+            $conn->commit(); // Commit transaksi
+            echo '<script>alert("Pembayaran berhasil! Data sudah disimpan."); window.location.href = "confirmation.php";</script>';
+        } catch (Exception $e) {
+            $conn->rollBack(); // Rollback transaksi
+            echo '<script>alert("Terjadi kesalahan: ' . $e->getMessage() . '"); history.back();</script>';
+        }
+    } else {
+        echo '<script>alert("Keranjang kosong!"); history.back();</script>';
+    }
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -81,7 +154,7 @@ session_start();
             Total Harga: <span id="total-price">0 IDR</span>
         </div>
         <div class="payment-method">
-            <form action="process_payment.php" method="POST">
+            <form action="" method="POST">
                 <label><input type="radio" name="payment" value="credit-card" required> Kartu Kredit</label>
                 <label><input type="radio" name="payment" value="bank-transfer" required> Transfer Bank</label>
                 <label><input type="radio" name="payment" value="cash-on-delivery" required> Bayar di Tempat</label>
@@ -97,8 +170,8 @@ session_start();
         const cartItemsFromStorage = JSON.parse(localStorage.getItem('cartItems')) || {};
         const cartItemsList = document.getElementById('cart-items-list');
         const totalPriceElement = document.getElementById('total-price');
-        const totalPriceInput = document.getElementById('totalPriceInput');
-        const cartItemsInput = document.getElementById('cartItemsInput');
+        const totalPriceInput = document.getElementById('totalPriceInput'); // belum terconsume
+        const cartItemsInput = document.getElementById('cartItemsInput'); // belum terconsume
 
         if (Object.keys(cartItemsFromStorage).length > 0) {
             cartItemsList.innerHTML = ''; // Kosongkan elemen sebelumnya
@@ -112,18 +185,15 @@ session_start();
             });
 
             totalPriceElement.textContent = totalPrice.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
-            totalPriceInput.value = totalPrice; // Set nilai total harga di input tersembunyi
-            cartItemsInput.value = JSON.stringify(cartItemsFromStorage); // Set data keranjang di input tersembunyi
+            if (totalPriceInput) {
+                totalPriceInput.value = totalPrice; // Set nilai total harga di input tersembunyi
+            }
+            if (cartItemsInput) {
+                cartItemsInput.value = JSON.stringify(cartItemsFromStorage); // Set data keranjang di input tersembunyi
+            }
         } else {
             cartItemsList.innerHTML = '<li>Keranjang kosong.</li>';
         }
-
-        document.querySelector('.pay-button').addEventListener('click', function(e) {
-            if (!totalPriceInput.value || !cartItemsInput.value) {
-                e.preventDefault(); // Cegah submit jika input kosong
-                alert("Data keranjang atau total harga kosong. Silakan periksa kembali.");
-            }
-        });
     </script>
 </body>
 </html>
